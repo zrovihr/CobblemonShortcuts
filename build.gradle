@@ -1,0 +1,85 @@
+plugins {
+	id 'fabric-loom' version '1.9-SNAPSHOT'
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	maven { url = "https://cursemaven.com" }
+	maven { url = "https://maven.impactdev.net/repository/development/" }
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"cobblemon-interaction" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Cobblemon - compile only, can't run in dev due to Kotlin metadata remapping bug
+	modCompileOnly "com.cobblemon:fabric:1.7.3+1.21.1"
+	modImplementation "net.fabricmc:fabric-language-kotlin:1.13.9+kotlin.2.3.10"
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}"}
+	}
+}
+
+// Copy built jar to Prism Launcher mods folder after build
+tasks.register('copyToMods', Copy) {
+	dependsOn remapJar
+	from(remapJar.archiveFile)
+	into("/home/zanzrovihr/.var/app/org.prismlauncher.PrismLauncher/data/PrismLauncher/instances/1.21.1 Fabric Dev/minecraft/mods")
+}
+build.finalizedBy copyToMods
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}

@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "com.cobblemoninteraction.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+      "CobblemonMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
